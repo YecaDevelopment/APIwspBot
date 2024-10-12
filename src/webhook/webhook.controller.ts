@@ -33,7 +33,9 @@ export class WebhookController {
                 const newFrom = '54' + from.slice(3, from.length);
                 console.log('from USER: ', newFrom);
                 
-                await this.webHookServ.sendMessage(from);
+                const data = await this.webHookServ.sendMessage(from);
+                console.log('data: ', data);
+                
             }
 
             return { status: 'received' };
