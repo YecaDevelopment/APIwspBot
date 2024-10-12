@@ -1,10 +1,14 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { WebhookService } from './webhook.service';
 
 @Controller('webhook')
 export class WebhookController {
     
-    constructor(private readonly configServ : ConfigService ){}
+    constructor(
+        private readonly configServ : ConfigService,
+        private readonly webHookServ : WebhookService
+    ){}
 
     @Get()
     async verifyWebhook(@Query('hub.mode') mode: string, @Query('hub.challenge') challenge: string, @Query('hub.verify_token') token: string) {
@@ -21,7 +25,13 @@ export class WebhookController {
     async handleWebhook(@Body() body: any) {
         try {
             console.log('Mensaje recibido:', body);
-            // Aquí vamos a procesar el mensaje y responder
+
+            const messages = body.entry[0]?.changes[0]?.value?.messages;
+            if(messages && messages.length > 0){
+                const from = messages[0].from;
+                await this.webHookServ.sendMessage(from);
+            }
+
             return { status: 'received' };
         }
         catch (error) { return {status: 'FAIL handleWebHook', error}}
