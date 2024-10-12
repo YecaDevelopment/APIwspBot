@@ -30,9 +30,7 @@ export class WebhookService {
                     "Content-Type": 'application/json'
                 },
             })
-            console.log('URL: ', URL);
-            console.log('RESPONSE: ', response);
-            return response
+            return {URL, response}
         } 
         catch (error) { return {status: 'FAIL webhookSERV', error}}
     }
