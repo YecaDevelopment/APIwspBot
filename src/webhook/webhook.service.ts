@@ -10,6 +10,8 @@ export class WebhookService {
     async sendMessage(to : string){
         try {
             const URL : string = `${this.configServ.get('WSP_URI')}${this.configServ.get('WSP_PHONENUM')}/messages`;
+            
+            
             const data : {} = {
                 messaging_product: 'whatsapp',
                 to: to,
@@ -28,6 +30,8 @@ export class WebhookService {
                     "Content-Type": 'application/json'
                 },
             })
+            console.log('URL: ', URL);
+            console.log('RESPONSE: ', response);
             return response
         } 
         catch (error) { return {status: 'FAIL webhookSERV', error}}
