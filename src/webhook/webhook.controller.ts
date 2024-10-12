@@ -29,6 +29,8 @@ export class WebhookController {
             const messages = body.entry[0]?.changes[0]?.value?.messages;
             if(messages && messages.length > 0){
                 const from = messages[0].from;
+                console.log('from USER: ', from);
+                
                 await this.webHookServ.sendMessage(from);
             }
 
