@@ -30,6 +30,8 @@ export class WebhookController {
             if(messages && messages.length > 0){
                 const from = messages[0].from;
                 console.log('from USER: ', from);
+                const newFrom = '54' + from.slice(3, from.length-1);
+                console.log('from USER: ', newFrom);
                 
                 await this.webHookServ.sendMessage(from);
             }
