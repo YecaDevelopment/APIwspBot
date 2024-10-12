@@ -9,10 +9,7 @@ export class WebhookService {
 
     async sendMessage(to : string){
         try {
-            const URL : string = `${this.configServ.get('WSP_URI')}${this.configServ.get('WSP_PHONENUM')}/messages`;
-            console.log(URL);
-            console.log(this.configServ.get('WSP_ACCTOKEN'));
-            
+            const URL : string = `${this.configServ.get('WSP_URI')}${this.configServ.get('WSP_PHONENUM')}/messages`;            
             
             const data = {
                 "messaging_product": "whatsapp",
@@ -25,6 +22,8 @@ export class WebhookService {
                     }
                 }
             };
+            console.log('DATAsending: ', data);
+            
 
             const response = await axios.post(URL, data, {
                 headers: {
@@ -32,7 +31,7 @@ export class WebhookService {
                     "Content-Type": 'application/json'
                 },
             })
-            return {URL, response}
+            return {data, response}
         } 
         catch (error) { return {status: 'FAIL webhookSERV', error}}
     }
