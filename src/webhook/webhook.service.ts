@@ -14,16 +14,16 @@ export class WebhookService {
             console.log(this.configServ.get('WSP_ACCTOKEN'));
             
             
-            const data : {} = {
-                messaging_product: 'whatsapp',
-                to: to,
-                type: 'template',
-                template: {
-                    name: 'hello_world',
-                    language: {
-                        code: 'en_US',
-                    },
-                },
+            const data = {
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "template",
+                "template": {
+                    "name": "hello_world",
+                    "language": {
+                        "code": "en_US"
+                    }
+                }
             };
 
             const response = await axios.post(URL, data, {
