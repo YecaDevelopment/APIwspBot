@@ -28,7 +28,7 @@ export class WebhookService {
             const response = await axios.post(URL, data, {
                 headers: {
                     Authorization: `Bearer ${this.configServ.get('WSP_ACCTOKEN')}`,
-                    "Content-Type": 'application/json'
+                    'Content-Type': 'application/json'
                 },
             })
             return {data, response}
