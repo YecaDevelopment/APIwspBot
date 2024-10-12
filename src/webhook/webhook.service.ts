@@ -10,6 +10,8 @@ export class WebhookService {
     async sendMessage(to : string){
         try {
             const URL : string = `${this.configServ.get('WSP_URI')}${this.configServ.get('WSP_PHONENUM')}/messages`;
+            console.log(URL);
+            console.log(this.configServ.get('WSP_ACCTOKEN'));
             
             
             const data : {} = {
