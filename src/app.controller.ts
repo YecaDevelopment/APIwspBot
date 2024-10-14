@@ -1,21 +1,20 @@
-import { Controller, Get, Render } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Response } from 'express';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('T&C')
-  @Render('t&c')
-  async getTYC() {
-    try {return {message: 'Showing T&C'}} 
+  async getTYC(@Res() res : Response) {
+    try {return res.render('t&c')} 
     catch (error) {return error}
   }
 
   @Get('POP')
-  @Render('pop')
-  async getPOP() {
-    try {return {message: 'Showing POP'}} 
+  async getPOP(@Res() res : Response) {
+    try {return res.render('pop')} 
     catch (error) {return error}
   }
 
