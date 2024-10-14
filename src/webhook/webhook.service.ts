@@ -8,7 +8,7 @@ export class WebhookService {
 
     constructor(private readonly configServ : ConfigService){}
 
-    async sendMessage(to : string, msg : string){
+    async sendMessage(to : string, msg){
         try {
             const URL : string = `${this.configServ.get('WSP_URI')}${this.configServ.get('WSP_PHONENUM')}/messages`;            
             
