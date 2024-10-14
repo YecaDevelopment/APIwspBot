@@ -24,21 +24,12 @@ export class WebhookController {
     @Post()
     async handleWebhook(@Body() body: any) {
         try {
-            console.log('Mensaje recibido:', body);
-
             const messages = body.entry[0]?.changes[0]?.value?.messages;
             if(messages && messages.length > 0){
-                const from = messages[0].from;
-                console.log('from USER: ', from);
-                const newFrom = '54' + from.slice(3, from.length);
-                console.log('from USER: ', newFrom);
-                
-                const data = await this.webHookServ.sendMessage(newFrom);
-                console.log('data: ', data);
-                
+                const from = '54' + messages[0].from.slice(3, messages[0].from.length);
+                const msgText = messages[0].text?.body || '';
+                return await this.webHookServ.sendMessage(from, msgText);
             }
-
-            return { status: 'received' };
         }
         catch (error) { return {status: 'FAIL handleWebHook', error}}
     }
