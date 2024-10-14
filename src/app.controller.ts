@@ -7,23 +7,21 @@ export class AppController {
 
   @Get('T&C')
   @Render('t&c')
-  getTYC() {
+  async getTYC() {
     try {return {message: 'Showing T&C'}} 
     catch (error) {return error}
   }
 
   @Get('POP')
   @Render('pop')
-  getPOP() {
+  async getPOP() {
     try {return {message: 'Showing POP'}} 
     catch (error) {return error}
   }
 
   @Get()
   async getHello() {
-    try {
-      return this.appService.getHello();
-    } 
+    try {return this.appService.getHello()} 
     catch (error) { return error }    
   }
 }
