@@ -26,6 +26,8 @@ export class WebhookService {
                     'Content-Type': 'application/json'
                 },
             })
+            console.log(response);
+            
             return {data, response}
         } 
         catch (error) { return {status: 'FAIL webhookSERV', error}}
