@@ -18,10 +18,11 @@ export class AppController {
     catch (error) {return error}
   }
 
-  @Get()
-  async getHello() {
-    try {return this.appService.getHello()} 
-    catch (error) { return error }    
+  @Get('')
+  async getHome(@Res() res : Response) {
+    try {return res.render('index')} 
+    catch (error) {return error}
   }
+
 }
 
