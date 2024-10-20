@@ -90,6 +90,11 @@
   .copyright {
     margin-top: 5rem;
   }
+
+  .legal {
+    margin: 10px;
+  }
+
   @media (min-width: 400px) {
     .nav .list {
       list-style: none;
