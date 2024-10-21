@@ -22,7 +22,7 @@ export class WebhookService {
             
             const response = await axios.post(URL, data, {
                 headers: {
-                    Authorization: `Bearer ${this.configServ.get('WSP_ACCTOKEN')}`,
+                    Authorization: `Bearer ${this.configServ.get('WSP_PERMAACCTOKEN')}`,
                     'Content-Type': 'application/json'
                 },
             })
