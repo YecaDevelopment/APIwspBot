@@ -18,7 +18,7 @@ export class WebhookService {
                 "type": "text",
                 "text": {"body": sendMessage(msg)}
             };
-            console.log('DATAsending: ', data);
+            console.log('DATAsending: ', data, this.configServ.get('WSP_PHONENUM'));
             
             const response = await axios.post(URL, data, {
                 headers: {
