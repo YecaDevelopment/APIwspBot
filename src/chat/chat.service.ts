@@ -1,0 +1,20 @@
+import { Injectable } from '@nestjs/common';
+import * as conversation from '../chat/chat'
+@Injectable()
+export class ChatService {
+    protected conversation = conversation
+
+    constructor(){}
+
+    startChat(welcomeMsg : string, userPhone : string, projectId : number, projectIdSDA : number) : string {
+        return this.conversation.startChat(welcomeMsg, userPhone, projectId, projectIdSDA)
+    }
+
+    findChat(userPhone : string): (conversation.Chat | boolean){
+        return this.conversation.findChat(userPhone)
+    }
+
+    endChat(userPhone : string) : string {
+        return this.conversation.endChat(userPhone)
+    }
+}
