@@ -10,17 +10,25 @@ export enum CurrentStep {
 export class Chat {
     protected readonly _userPhone: string;
     protected readonly _welcome: string;
+    protected readonly _projectId: number;
+    protected readonly _projectIdSDA: number;
     protected _email: string;
+    protected _accountId: string;
     protected _optionGroup: number;
     protected _optionRequest: number;
+    protected _issueTypeId: number;
     protected _optionsFields: string[];
+    protected _countOptionsFields: number;
     protected _tktNumber: string;
     protected _currentStep: CurrentStep;
     private timeoutId: NodeJS.Timeout; // ID del temporizador
 
-    constructor(welcome: string, userPhone: string) {
+    constructor(welcome: string, userPhone: string, projectId: number, projectIdSDA: number) {
         this._welcome = welcome;
         this._userPhone = userPhone;
+        this._projectId = projectId;
+        this._projectIdSDA = projectIdSDA;
+        this._countOptionsFields = 0;
         this._currentStep = CurrentStep.welcome
         this.startTimer(); // Iniciar el temporizador al crear el chat
     }
@@ -41,12 +49,32 @@ export class Chat {
         // Lógica para eliminar el chat del mapa
         endChat(this._userPhone);
     }
+
     // Getters & Setters
+    protected get userPhone(): string {
+        return this.userPhone;
+    }
+    protected get welcome(): string {
+        return this.welcome;
+    }
+    protected get projectId(): number {
+        return this._projectId;
+    }
+    protected get projectIdSDA(): number {
+        return this._projectIdSDA;
+    }
+
     protected get email(): string {
         return this._email;
     }
     protected set email(value: string) {
         this._email = value;
+    }
+    protected get accountId(): string {
+        return this._accountId;
+    }
+    protected set accountId(value: string) {
+        this._accountId = value;
     }
     protected get optionGroup(): number {
         return this._optionGroup;
@@ -60,11 +88,23 @@ export class Chat {
     protected set optionRequest(value: number) {
         this._optionRequest = value;
     }
+    protected get issueTypeId(): number {
+        return this._issueTypeId;
+    }
+    protected set issueTypeId(value: number) {
+        this._issueTypeId = value;
+    }
     protected get optionsFields(): string[] {
         return this._optionsFields;
     }
-    protected set optionsFields(value: string) {
-        this._optionsFields.push(value);
+    protected set optionsFields(value: string[]) {
+        this._optionsFields = value;
+    }
+    protected get countOptionsFields(): number {
+        return this._countOptionsFields;
+    }
+    protected set countOptionsFields( value : number) {
+        this._countOptionsFields++;
     }
     protected get tktNumber(): string {
         return this.tktNumber;
@@ -78,7 +118,6 @@ export class Chat {
     protected set currentStep(value: CurrentStep) {
         this._currentStep = value;
     }
-
 }
 
 // Mapa global para almacenar las sesiones de chat
@@ -95,8 +134,8 @@ export function findChat(userPhone : string) : Chat | boolean {
     return false
 }
 // Crear un nuevo chat y almacenarlo en el mapa
-export function startChat(welcomeMessage: string, userPhone: string): string {
-    const newChat = new Chat(welcomeMessage, userPhone);
+export function startChat(welcomeMessage: string, userPhone: string, projectId: number, projectIdSDA: number): string {
+    const newChat = new Chat(welcomeMessage, userPhone, projectId, projectIdSDA);
     chatSessions.set(userPhone, newChat);
     return `Chat ${userPhone} initialized.`
 }

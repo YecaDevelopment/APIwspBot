@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import * as conversation from '../chat/chat'
 @Injectable()
 export class ChatService {
-    private conversation = conversation
+    protected conversation = conversation
 
     constructor(){}
 
-    startChat(welcomeMsg : string, userPhone : string) : string {
-        return this.conversation.startChat(welcomeMsg, userPhone)
+    startChat(welcomeMsg : string, userPhone : string, projectId : number, projectIdSDA : number) : string {
+        return this.conversation.startChat(welcomeMsg, userPhone, projectId, projectIdSDA)
     }
 
     findChat(userPhone : string): (conversation.Chat | boolean){

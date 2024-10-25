@@ -20,7 +20,7 @@ interface infoTKT {
   projectId: number
   issueTypeId: number
   requestId: number
-  fields: fieldsOpt[]
+  fields: {fieldId : string, value: string}[]
 }
 
 @Injectable()
@@ -108,26 +108,30 @@ export class JiraService {
     try {
       const URL = `https://desarrolloyeca.atlassian.net/rest/api/${infoTkt.projectId}/issue`
 
+      const dynamicFields = infoTkt.fields.reduce((acc, elem) => {
+        acc[elem.fieldId] = elem.value;
+        return acc;
+      }, {});
+
       const body = {
         "fields": {
           "reporter": {"id": infoTkt.accountId},
-          "project": {
-            "id": "10000"
-          },
+          "project": {"id": "10000"},
           "issuetype": {"id": infoTkt.issueTypeId.toString()},
           "customfield_10010": infoTkt.requestId.toString(),
-          "summary": "TESTING with BACKEND",
-          "description": {
-            "type": "doc",
-            "version": 1,
-            "content": [{
-              "type": "paragraph",
-              "content": [{
-                "text": "I generated this TKT with method in bot",
-                "type": "text"
-              }]
-            }]
-          }
+          // "summary": "TESTING with BACKEND",
+          // "description": {
+          //   "type": "doc",
+          //   "version": 1,
+          //   "content": [{
+          //     "type": "paragraph",
+          //     "content": [{
+          //       "text": "I generated this TKT with method in bot",
+          //       "type": "text"
+          //     }]
+          //   }]
+          // },
+          ...dynamicFields
         },
         "update": {},
       }
