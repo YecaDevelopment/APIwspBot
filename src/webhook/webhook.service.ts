@@ -21,7 +21,7 @@ export class WebhookService {
             if(this.chatServ.findChat(to)) {
                 chat = this.chatServ.findChat(to)
             }else {
-                chat = this.chatServ.startChat(sendMessage('hola'), to)
+                //chat = this.chatServ.startChat(sendMessage('hola'), to)
             }
 
             const data = {
