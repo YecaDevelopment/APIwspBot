@@ -14,6 +14,10 @@ export class ChatService {
         return this.conversation.findChat(userPhone)
     }
 
+    findAllChat() {
+        return this.conversation.findAllChat()        
+    }
+
     endChat(userPhone : string) : string {
         return this.conversation.endChat(userPhone)
     }

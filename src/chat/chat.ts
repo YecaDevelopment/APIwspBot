@@ -8,19 +8,19 @@ export enum CurrentStep {
 }
 
 export class Chat {
-    protected readonly _userPhone: string;
-    protected readonly _welcome: string;
-    protected readonly _projectId: number;
-    protected readonly _projectIdSDA: number;
-    protected _email: string;
-    protected _accountId: string;
-    protected _optionGroup: number;
-    protected _optionRequest: number;
-    protected _issueTypeId: number;
-    protected _optionsFields: string[];
-    protected _countOptionsFields: number;
-    protected _tktNumber: string;
-    protected _currentStep: CurrentStep;
+    readonly _userPhone: string;
+    readonly _welcome: string;
+    readonly _projectId: number;
+    readonly _projectIdSDA: number;
+    _email: string;
+    _accountId: string;
+    _optionGroup: number;
+    _optionRequest: number;
+    _issueTypeId: number;
+    _optionsFields: string[];
+    _countOptionsFields: number;
+    _tktNumber: string;
+    _currentStep: CurrentStep;
     private timeoutId: NodeJS.Timeout; // ID del temporizador
 
     constructor(welcome: string, userPhone: string, projectId: number, projectIdSDA: number) {
@@ -51,71 +51,71 @@ export class Chat {
     }
 
     // Getters & Setters
-    protected get userPhone(): string {
+    get userPhone(): string {
         return this.userPhone;
     }
-    protected get welcome(): string {
+    get welcome(): string {
         return this.welcome;
     }
-    protected get projectId(): number {
+    get projectId(): number {
         return this._projectId;
     }
-    protected get projectIdSDA(): number {
+    get projectIdSDA(): number {
         return this._projectIdSDA;
     }
 
-    protected get email(): string {
+    get getEmail(): string {
         return this._email;
     }
-    protected set email(value: string) {
+    set email(value: string) {
         this._email = value;
     }
-    protected get accountId(): string {
+    get getAccountId(): string {
         return this._accountId;
     }
-    protected set accountId(value: string) {
+    set accountId(value: string) {
         this._accountId = value;
     }
-    protected get optionGroup(): number {
+    get getOptionGroup(): number {
         return this._optionGroup;
     }
-    protected set optionGroup(value: number) {
+    set optionGroup(value: number) {
         this._optionGroup = value;
     }
-    protected get optionRequest(): number {
+    get getOptionRequest(): number {
         return this._optionRequest;
     }
-    protected set optionRequest(value: number) {
+    set optionRequest(value: number) {
         this._optionRequest = value;
     }
-    protected get issueTypeId(): number {
+    get getIssueTypeId(): number {
         return this._issueTypeId;
     }
-    protected set issueTypeId(value: number) {
+    set issueTypeId(value: number) {
         this._issueTypeId = value;
     }
-    protected get optionsFields(): string[] {
+    get getOptionsFields(): string[] {
         return this._optionsFields;
     }
-    protected set optionsFields(value: string[]) {
+    set optionsFields(value: string[]) {
         this._optionsFields = value;
     }
-    protected get countOptionsFields(): number {
+    get getCountOptionsFields(): number {
         return this._countOptionsFields;
     }
-    protected set countOptionsFields( value : number) {
+    set countOptionsFields( value : number) {
         this._countOptionsFields++;
     }
-    protected get tktNumber(): string {
+    get getTktNumber(): string {
         return this.tktNumber;
     }
-    protected set tktNumber(value: string) {
+    set tktNumber(value: string) {
         this._tktNumber = value;
     }
-    protected get currentStep(): string {
+    get getCurrentStep(): string {
         return this._currentStep;
     }
-    protected set currentStep(value: CurrentStep) {
+    set currentStep(value: CurrentStep) {
         this._currentStep = value;
     }
 }
@@ -125,13 +125,17 @@ export const chatSessions: Map<string, Chat> = new Map();
 
 // Función para eliminar una conversación del mapa
 export function endChat(userPhone: string): string {
-    chatSessions.delete(userPhone);
-    return `Chat ${userPhone} deleted.`;
+    const  isDeleted = chatSessions.delete(userPhone);
+    return `Delete chat ${userPhone}: ${isDeleted}.`;
 }
 // Función para buscar una conversación del mapa
 export function findChat(userPhone : string) : Chat | boolean {
     if(chatSessions.has(userPhone)) return chatSessions.get(userPhone)
     return false
+}
+// Función para traer todas las conversaciones del mapa
+export function findAllChat() {
+    return `Conversaciones en curso: ${chatSessions.size}.`
 }
 // Crear un nuevo chat y almacenarlo en el mapa
 export function startChat(welcomeMessage: string, userPhone: string, projectId: number, projectIdSDA: number): string {

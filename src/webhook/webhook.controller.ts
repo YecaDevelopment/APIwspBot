@@ -31,13 +31,11 @@ export class WebhookController {
             if(messages && messages.length > 0){
                 const from = '54' + messages[0].from.slice(3, messages[0].from.length);
                 if(whiteList){               //  ---------------->>  Replace with whiteList.some(from)
-                    this.conversation
                     const msgText = messages[0].text?.body || '';
                     console.log({from, msgText});
                     const response = await this.webHookServ.sendMessage(from, msgText);
                     console.log(response);
                 }
-                
             }
         }
         catch (error) { return {status: 'FAIL CONTROLLERWEBHOOK', error}}

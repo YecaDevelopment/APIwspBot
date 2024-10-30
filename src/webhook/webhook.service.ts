@@ -4,13 +4,15 @@ import axios from 'axios';
 import { sendMessage } from './defaultMessages/defaultMessage';
 import { ChatService } from 'src/chat/chat.service';
 import { Chat } from 'src/chat/chat';
+import { JiraService } from 'src/jira/jira.service';
 
 @Injectable()
 export class WebhookService {
 
     constructor(
         private readonly configServ : ConfigService,
-        private readonly chatServ : ChatService
+        private readonly chatServ : ChatService,
+        private readonly jiraServ : JiraService
     ){}
 
     async sendMessage(to : string, msg : string){
@@ -21,9 +23,11 @@ export class WebhookService {
             if(this.chatServ.findChat(to)) {
                 chat = this.chatServ.findChat(to)
             }else {
-                chat = this.chatServ.startChat(sendMessage('hola'), to)
+                //chat = this.chatServ.startChat(sendMessage('hola'), to)
             }
 
+
+            
             const data = {
                 "messaging_product": "whatsapp",
                 "to": to,
