@@ -20,7 +20,9 @@ export class ChatController {
     @Get('find')
     async findChat(@Query('phone') phone : string){
         try {
-            const newChat = await this.chatServ.findChat(phone)            
+            const newChat = await this.chatServ.findChat(phone)
+            console.log(newChat);
+                        
             return newChat ? "Chat FOUNDED" : "Chat NOT FOUND"  
         }
         catch (error) {return error}
