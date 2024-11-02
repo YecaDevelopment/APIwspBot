@@ -6,7 +6,7 @@ export class ChatService {
 
     constructor(){}
 
-    startChat(welcomeMsg : string, userPhone : string, projectId : number, projectIdSDA : number) : string {
+    startChat(welcomeMsg : string, userPhone : string, projectId : number, projectIdSDA : number) : conversation.Chat {
         return this.conversation.startChat(welcomeMsg, userPhone, projectId, projectIdSDA)
     }
 

@@ -138,8 +138,9 @@ export function findAllChat() {
     return `Conversaciones en curso: ${chatSessions.size}.`
 }
 // Crear un nuevo chat y almacenarlo en el mapa
-export function startChat(welcomeMessage: string, userPhone: string, projectId: number, projectIdSDA: number): string {
+export function startChat(welcomeMessage: string, userPhone: string, projectId: number, projectIdSDA: number): Chat {
     const newChat = new Chat(welcomeMessage, userPhone, projectId, projectIdSDA);
     chatSessions.set(userPhone, newChat);
-    return `Chat ${userPhone} initialized.`
+    return newChat
+    // return `Chat ${userPhone} initialized.`
 }
