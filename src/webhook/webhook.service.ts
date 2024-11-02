@@ -16,7 +16,7 @@ export class WebhookService {
 
     private groupOptionsSlot: number[] = []
     private requestOptionsSlot: number[] = []
-    private requestFieldsOptionsSlot: number[] = []
+    private requestFieldsSlot: {fieldId: string, name: string, required: boolean, validValues: string}[] = []
 
     constructor(
         private readonly configServ : ConfigService,
@@ -124,12 +124,18 @@ export class WebhookService {
                     }
                     chat.optionRequest = this.requestOptionsSlot[(parseInt(msg)-1)]
                     const requestFieldOptions = issuesRequestsFields.body.map((issuesRequestField: {fieldId: string, name: string, required: boolean, validValues: string}) => {
-                        return `- Nombre del campo: ${issuesRequestField?.name}\n   Es requerido: ${issuesRequestField.required ? 'No' : 'Si'}\n   ${issuesRequestField.validValues === "" ? "" : "Valores: " + issuesRequestField.validValues}`
+                        this.requestFieldsSlot.push(issuesRequestField)
+                        return `+ Campo: ${issuesRequestField?.name}` +'\n'+
+                            `  Requerido: ${!issuesRequestField.required ? 'NO' : 'SI'}` +
+                            `${issuesRequestField.validValues === "" ? "" : "\n  Valores: " + issuesRequestField.validValues}`  
                     }).join('\n')
                     chat.currentStep = CurrentStep.fillOptions
                     answer = "Genial, ahora te comparto una serie de campos de deberas completar:." 
-                        + '\n' + requestFieldOptions
+                        + '\n' + requestFieldOptions +'\n'+
+                        'Ejemplo:\ncampo: valor\ncampo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
                     break
+                case CurrentStep.fillOptions:
+                    
             }
 
             const data = {
