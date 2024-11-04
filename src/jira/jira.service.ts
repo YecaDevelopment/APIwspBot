@@ -15,7 +15,7 @@ interface fieldsOpt {
   required: boolean
   validValues: []
 }
-interface infoTKT {
+export interface infoTKT {
   accountId: string
   projectId: number
   issueTypeId: number

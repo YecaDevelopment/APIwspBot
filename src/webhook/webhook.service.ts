@@ -4,7 +4,7 @@ import axios from 'axios';
 import { sendMessage } from './defaultMessages/defaultMessage';
 import { ChatService } from 'src/chat/chat.service';
 import { Chat, CurrentStep } from 'src/chat/chat';
-import { JiraService } from 'src/jira/jira.service';
+import { infoTKT, JiraService } from 'src/jira/jira.service';
 
 function validateMail(mail: string) {
     const mailPattern = /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/;
@@ -15,8 +15,9 @@ function validateMail(mail: string) {
 export class WebhookService {
 
     private groupOptionsSlot: number[] = []
-    private requestOptionsSlot: number[] = []
+    private requestOptionsSlot: {id: string, name: string, issueTypeId: string, groupId: number, canCreate: boolean}[] = []
     private requestFieldsSlot: {fieldId: string, name: string, required: boolean, validValues: string}[] = []
+    private tkt : infoTKT
 
     constructor(
         private readonly configServ : ConfigService,
@@ -45,16 +46,17 @@ export class WebhookService {
                     break
                 case CurrentStep.identify:
                     if(chat.accountId === null || chat.accountId === undefined) {
-                        if(!validateMail(msg)) {
+                        if(!validateMail(msg.trim())) {
                             answer = "El formato del correo electronico NO es valido, por favor vuelva a intentarlo."
                             break
                         }
-                        const verifyUser = await this.jiraServ.verifyUser(msg)
+                        const verifyUser = await this.jiraServ.verifyUser(msg.trim())
                         if(!verifyUser.status) {
                             answer = "No se logro verificar su identidad, por favor vuelva intentarlo."
                             break
                         }
                         chat.accountId = verifyUser.body
+                        chat.email = msg.trim()
                     }
                     const issuesGroups = await this.jiraServ.getIssuesGroups(chat.projectId)
                     if(!issuesGroups.status) {
@@ -95,8 +97,8 @@ export class WebhookService {
                         break
                     }
                     chat.optionGroup = this.groupOptionsSlot[(parseInt(msg)-1)]
-                    const requestOptions = issuesRequests.body.map((issuesRequest: {id: string, name: string}, index) => {
-                        this.requestOptionsSlot.push(parseInt(issuesRequest.id))
+                    const requestOptions = issuesRequests.body.map((issuesRequest: {id: string, name: string, issueTypeId: string, groupId: number, canCreate: boolean}, index) => {
+                        this.requestOptionsSlot.push(issuesRequest)
                         return `${index+1} . ${issuesRequest?.name}`
                     }).join('\n')
                     chat.currentStep = CurrentStep.selectRequest
@@ -108,11 +110,11 @@ export class WebhookService {
                         answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentar."
                         break
                     }
-                    if(!this.requestOptionsSlot.findIndex(groupOption => groupOption === parseInt(msg)-1)) {
+                    if(!this.requestOptionsSlot.findIndex(groupOption => parseInt(groupOption.id) === parseInt(msg)-1)) {
                         answer = "Opcion no encontrada, por favor vuelva a intentarlo"
                         break
                     }
-                    const issuesRequestsFields = await this.jiraServ.getIssuesRequestsFields(chat.projectId, this.requestOptionsSlot[(parseInt(msg)-1)])
+                    const issuesRequestsFields = await this.jiraServ.getIssuesRequestsFields(chat.projectId, parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id))
                     if(!issuesRequestsFields.status) {
                         answer = "Fallo al obtener las solicitudes"
                         break
@@ -122,7 +124,8 @@ export class WebhookService {
                         answer = issuesRequestsFields.body
                         break
                     }
-                    chat.optionRequest = this.requestOptionsSlot[(parseInt(msg)-1)]
+                    chat.optionRequest = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id)
+                    chat.issueTypeId = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].issueTypeId)
                     const requestFieldOptions = issuesRequestsFields.body.map((issuesRequestField: {fieldId: string, name: string, required: boolean, validValues: string}) => {
                         this.requestFieldsSlot.push(issuesRequestField)
                         return `+ Campo: ${issuesRequestField?.name}` +'\n'+
@@ -132,10 +135,48 @@ export class WebhookService {
                     chat.currentStep = CurrentStep.fillOptions
                     answer = "Genial, ahora te comparto una serie de campos de deberas completar:." 
                         + '\n' + requestFieldOptions +'\n'+
-                        'Ejemplo:\ncampo: valor\ncampo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
+                        'Ejemplo:\ncampo: valor, campo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
                     break
                 case CurrentStep.fillOptions:
-                    
+                    let validated = true
+                    const fields = msg.split(',').map((field) => {
+                        let arr = field.split(':')
+                        return { key: arr[0].toLowerCase().trim(), value: arr[1].toLowerCase().trim() }
+                    })
+                    const validatedFields = fields.map((field) => {
+                        const foundField = this.requestFieldsSlot.find(rfs => {
+                            if(rfs.required && rfs.name.toLowerCase() !== field.key)
+                                return `El campo ${rfs.name} es requerido!`
+                            if(rfs.name.toLowerCase() !== field.key)
+                                return `El campo ${rfs.name} no se ha encontrado!`
+                            
+                        })
+                        if(foundField === undefined || null) {
+                            
+                        }
+                        if(foundField.validValues.trim() !== "") {
+                            const includeValue = foundField.validValues.split(',').find(value => value.toLowerCase().trim() === field.value)
+                            if(!includeValue) {
+                                return `El valor del campo ${foundField.name} no es valido.`
+                            }
+                        }
+                        if(validated)
+                            return {fieldId: foundField.fieldId, value: field.value}
+                    })
+                    if(!validated) {
+                        break
+                    }
+                    this.tkt = {
+                        accountId: chat.getAccountId,
+                        projectId: chat._projectId,
+                        issueTypeId: chat.getIssueTypeId,
+                        requestId: chat.getOptionRequest,
+                        fields: validatedFields
+                    }
+                    chat.currentStep = CurrentStep.returnTkt
+                case CurrentStep.returnTkt:
+                    const response = await this.jiraServ.createTKT(this.tkt)
+                    console.log(response)
             }
 
             const data = {
@@ -144,7 +185,7 @@ export class WebhookService {
                 "type": "text",
                 "text": {"body": answer}
             };
-            console.log('DATAsending: ', data, this.configServ.get('WSP_PHONENUM'));
+            // console.log('DATAsending: ', data, this.configServ.get('WSP_PHONENUM'));
 
             // const response = await axios.post(URL, data, {
             //     headers: {
