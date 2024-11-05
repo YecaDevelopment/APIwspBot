@@ -32,7 +32,7 @@ export class WebhookService {
             let answer : string = '...'
 
             if(typeof chat === "boolean") {
-                chat = this.chatServ.startChat('hola', to, 1, 23)
+                chat = this.chatServ.startChat(msg, to, 1, 23)
             }
 
             switch(chat.getCurrentStep){
@@ -42,8 +42,10 @@ export class WebhookService {
                         "Voy a necesitar que escribas tu correo electronico correspondiente a la empresa en donde trabajas" + '\n' + 
                         "Ejemplo: tucorreo@email.com" + '\n' +
                         "¡Ten en cuenta que validaremos el formato del mismo, asi que antes de enviarlo revisa bien tu correo!"
+                        // Politica de privacidad (link)
                     break
                 case CurrentStep.identify:
+                    // Enviar numero de telefono a la db -> mail del usuario
                     if(chat.accountId === undefined || null) {
                         if(msg.trim() === "") {
                             answer = `Mensaje vacio. Por favor vuelva a intentarlo`
@@ -141,6 +143,7 @@ export class WebhookService {
                         'Ejemplo:\ncampo: valor, campo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
                     break
                 case CurrentStep.fillOptions:
+                    // CAMPO POR CAMPO - Ignorar 'requerido'
                     if(msg.trim() === "") {
                         answer = `Mensaje vacio. Por favor vuelva a intentarlo`
                         break
