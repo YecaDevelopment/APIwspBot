@@ -33,7 +33,6 @@ export class WebhookService {
 
             if(typeof chat === "boolean") {
                 chat = this.chatServ.startChat('hola', to, 1, 23)
-                console.log(chat._currentStep)
             }
 
             switch(chat.getCurrentStep){
@@ -45,7 +44,11 @@ export class WebhookService {
                         "¡Ten en cuenta que validaremos el formato del mismo, asi que antes de enviarlo revisa bien tu correo!"
                     break
                 case CurrentStep.identify:
-                    if(chat.accountId === null || chat.accountId === undefined) {
+                    if(chat.accountId === undefined || null) {
+                        if(msg.trim() === "") {
+                            answer = `Mensaje vacio. Por favor vuelva a intentarlo`
+                            break
+                        }
                         if(!validateMail(msg.trim())) {
                             answer = "El formato del correo electronico NO es valido, por favor vuelva a intentarlo."
                             break
@@ -57,15 +60,16 @@ export class WebhookService {
                         }
                         chat.accountId = verifyUser.body
                         chat.email = msg.trim()
+                        answer = "Identidad verificada." + '\n'
                     }
                     const issuesGroups = await this.jiraServ.getIssuesGroups(chat.projectId)
                     if(!issuesGroups.status) {
-                        answer = "Fallo al obtener los grupos"
+                        answer += "Fallo al obtener los grupos."
                         break
                     }
                     if(typeof issuesGroups.body === 'string') {
                         // Matar la operación?
-                        answer = issuesGroups.body
+                        answer += issuesGroups.body
                         break
                     }
                     const groupOptions = issuesGroups.body.map((issuesGroup: {id: string, name: string}, index) => {
@@ -73,8 +77,7 @@ export class WebhookService {
                         return `${index+1} . ${issuesGroup?.name}`
                     }).join('\n')
                     chat.currentStep = CurrentStep.selectGroup
-                    answer = "Identidad verificada" + '\n' +
-                        "Genial, ahora te comparto una lista de opciones, decime el número que se ajuste tu problema." 
+                    answer += "Genial, ahora te comparto una lista de opciones, decime el número que se ajuste tu problema." 
                         + '\n' + groupOptions
                     break
                 case CurrentStep.selectGroup:
@@ -82,13 +85,13 @@ export class WebhookService {
                         answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentar."
                         break
                     }
-                    if(!this.groupOptionsSlot.findIndex(groupOption => groupOption === parseInt(msg)-1)) {
-                        answer = "Opcion no encontrada, por favor vuelva a intentarlo"
+                    if(!this.groupOptionsSlot[(parseInt(msg)-1)]) {
+                        answer = "Opcion no encontrada, por favor vuelva a intentarlo."
                         break
                     }
                     const issuesRequests = await this.jiraServ.getIssuesRequests(chat.projectId, this.groupOptionsSlot[(parseInt(msg)-1)])
                     if(!issuesRequests.status) {
-                        answer = "Fallo al obtener las solicitudes"
+                        answer = "Fallo al obtener las solicitudes, por favor vuelva a intentarlo."
                         break
                     }
                     if(typeof issuesRequests.body === 'string') {
@@ -110,13 +113,13 @@ export class WebhookService {
                         answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentar."
                         break
                     }
-                    if(!this.requestOptionsSlot.findIndex(groupOption => parseInt(groupOption.id) === parseInt(msg)-1)) {
-                        answer = "Opcion no encontrada, por favor vuelva a intentarlo"
+                    if(!this.requestOptionsSlot[(parseInt(msg)-1)]) {
+                        answer = "Opcion no encontrada, por favor vuelva a intentarlo."
                         break
                     }
                     const issuesRequestsFields = await this.jiraServ.getIssuesRequestsFields(chat.projectId, parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id))
                     if(!issuesRequestsFields.status) {
-                        answer = "Fallo al obtener las solicitudes"
+                        answer = "Fallo al obtener las solicitudes, por favor vuelva a intentar"
                         break
                     }
                     if(typeof issuesRequestsFields.body === 'string') {
@@ -138,31 +141,42 @@ export class WebhookService {
                         'Ejemplo:\ncampo: valor, campo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
                     break
                 case CurrentStep.fillOptions:
+                    if(msg.trim() === "") {
+                        answer = `Mensaje vacio. Por favor vuelva a intentarlo`
+                        break
+                    }
                     let validated = true
+                    const validatedFields: {fieldId: string, value: string}[] = []
                     const fields = msg.split(',').map((field) => {
                         let arr = field.split(':')
                         return { key: arr[0].toLowerCase().trim(), value: arr[1].toLowerCase().trim() }
                     })
-                    const validatedFields = fields.map((field) => {
+                    for (let i = 0; i < fields.length; i++) {
                         const foundField = this.requestFieldsSlot.find(rfs => {
-                            if(rfs.required && rfs.name.toLowerCase() !== field.key)
-                                return `El campo ${rfs.name} es requerido!`
-                            if(rfs.name.toLowerCase() !== field.key)
-                                return `El campo ${rfs.name} no se ha encontrado!`
-                            
+                            if(rfs.required && rfs.name.toLowerCase() !== fields[i].key) {
+                                answer = `El campo ${rfs.name} es requerido!`
+                                return null
+                            }
+                            if(rfs.name.toLowerCase() !== fields[i].key) {
+                                answer = `El campo ${fields[i].key} no se ha encontrado!`
+                                return null
+                            }
+                            return rfs
                         })
-                        if(foundField === undefined || null) {
-                            
+                        if(typeof foundField === null) {
+                            validated = false
+                            break
                         }
                         if(foundField.validValues.trim() !== "") {
-                            const includeValue = foundField.validValues.split(',').find(value => value.toLowerCase().trim() === field.value)
-                            if(!includeValue) {
-                                return `El valor del campo ${foundField.name} no es valido.`
+                            const includeValue = foundField.validValues.split(',').find(value => value.toLowerCase().trim() === fields[i].value)
+                            if(includeValue === undefined || null) {
+                                validated = false
+                                answer = `El valor del campo ${foundField.name} no es valido.`
+                                break
                             }
                         }
-                        if(validated)
-                            return {fieldId: foundField.fieldId, value: field.value}
-                    })
+                        validatedFields.push({fieldId: foundField.fieldId, value: fields[i].value})
+                    }
                     if(!validated) {
                         break
                     }
