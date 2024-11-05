@@ -15,7 +15,7 @@ interface fieldsOpt {
   required: boolean
   validValues: []
 }
-interface infoTKT {
+export interface infoTKT {
   accountId: string
   projectId: number
   issueTypeId: number
@@ -116,7 +116,7 @@ export class JiraService {
       const body = {
         "fields": {
           "reporter": {"id": infoTkt.accountId},
-          "project": {"id": "10000"},
+          "project": {"id": infoTkt.projectId},
           "issuetype": {"id": infoTkt.issueTypeId.toString()},
           "customfield_10010": infoTkt.requestId.toString(),
           // "summary": "TESTING with BACKEND",
