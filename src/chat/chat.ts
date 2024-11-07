@@ -28,7 +28,7 @@ export class Chat {
         this._userPhone = userPhone;
         this._projectId = projectId;
         this._projectIdSDA = projectIdSDA;
-        this._countOptionsFields = 0;
+        this._countOptionsFields = -1;
         this._currentStep = CurrentStep.welcome
         this.startTimer(); // Iniciar el temporizador al crear el chat
     }

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { sendMessage } from './defaultMessages/defaultMessage';
 import { ChatService } from 'src/chat/chat.service';
 import { Chat, CurrentStep } from 'src/chat/chat';
 import { infoTKT, JiraService } from 'src/jira/jira.service';
@@ -16,7 +15,8 @@ export class WebhookService {
 
     private groupOptionsSlot: number[] = []
     private requestOptionsSlot: {id: string, name: string, issueTypeId: string, groupId: number, canCreate: boolean}[] = []
-    private requestFieldsSlot: {fieldId: string, name: string, required: boolean, validValues: string}[] = []
+    private requestFieldsSlot: any[] = []
+    private validatedFields: {fieldId : string, value: string}[] = []
     private tkt : infoTKT
 
     constructor(
@@ -131,67 +131,52 @@ export class WebhookService {
                     }
                     chat.optionRequest = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id)
                     chat.issueTypeId = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].issueTypeId)
-                    const requestFieldOptions = issuesRequestsFields.body.map((issuesRequestField: {fieldId: string, name: string, required: boolean, validValues: string}) => {
-                        this.requestFieldsSlot.push(issuesRequestField)
-                        return `+ Campo: ${issuesRequestField?.name}` +'\n'+
-                            `  Requerido: ${!issuesRequestField.required ? 'NO' : 'SI'}` +
-                            `${issuesRequestField.validValues === "" ? "" : "\n  Valores: " + issuesRequestField.validValues}`  
-                    }).join('\n')
+                    this.requestFieldsSlot = issuesRequestsFields.body
                     chat.currentStep = CurrentStep.fillOptions
-                    answer = "Genial, ahora te comparto una serie de campos de deberas completar:." 
-                        + '\n' + requestFieldOptions +'\n'+
-                        'Ejemplo:\ncampo: valor, campo_siguiente: valor\n ... Asi sucesivamente hasta completar los campos. Tener en cuenta que aquellos campos que no son requeridos no es necesario que los completen, por otro lado, aquellos campos con valores preimpuestos deberan ser completados con los mismos y no con otros.'
-                    break
+                    answer = "Genial, ahora te compartire una serie de campos que deberas completar...\n" 
                 case CurrentStep.fillOptions:
-                    // CAMPO POR CAMPO - Ignorar 'requerido'
+                    let field: any
+                    if(chat.getCountOptionsFields === -1) {
+                        chat.countOptionsFields = chat.getCountOptionsFields + 1
+                        console.log(chat.getCountOptionsFields)
+                        field = this.requestFieldsSlot[chat.getCountOptionsFields]
+                        chat.optionsFields = field?.validValues.split(',').map((value: string) => {return value.toLowerCase().trim()})
+                        answer += `Escriba el nombre del campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
+                        break
+                    }
+                    field = this.requestFieldsSlot[chat.getCountOptionsFields]
                     if(msg.trim() === "") {
-                        answer = `Mensaje vacio. Por favor vuelva a intentarlo`
+                        answer = 'Mensaje vacio. Por favor vuelva a intentarlo'
                         break
                     }
-                    let validated = true
-                    const validatedFields: {fieldId: string, value: string}[] = []
-                    const fields = msg.split(',').map((field) => {
-                        let arr = field.split(':')
-                        return { key: arr[0].toLowerCase().trim(), value: arr[1].toLowerCase().trim() }
-                    })
-                    for (let i = 0; i < fields.length; i++) {
-                        const foundField = this.requestFieldsSlot.find(rfs => {
-                            if(rfs.required && rfs.name.toLowerCase() !== fields[i].key) {
-                                answer = `El campo ${rfs.name} es requerido!`
-                                return null
-                            }
-                            if(rfs.name.toLowerCase() !== fields[i].key) {
-                                answer = `El campo ${fields[i].key} no se ha encontrado!`
-                                return null
-                            }
-                            return rfs
-                        })
-                        if(typeof foundField === null) {
-                            validated = false
-                            break
-                        }
-                        if(foundField.validValues.trim() !== "") {
-                            const includeValue = foundField.validValues.split(',').find(value => value.toLowerCase().trim() === fields[i].value)
-                            if(includeValue === undefined || null) {
-                                validated = false
-                                answer = `El valor del campo ${foundField.name} no es valido.`
-                                break
-                            }
-                        }
-                        validatedFields.push({fieldId: foundField.fieldId, value: fields[i].value})
-                    }
-                    if(!validated) {
+                    if(field?.validValues !== "" && !chat.getOptionsFields.includes(msg.toLowerCase().trim())){
+                        answer = 'Opcion incorrecta, vuelve a intentarlo.'
                         break
                     }
+
+                    chat.countOptionsFields = chat.getCountOptionsFields + 1
+                    console.log(chat.getCountOptionsFields)
+                    chat.optionsFields = []
+                    this.validatedFields.push({fieldId: field.fieldId, value: msg.trim()})
+
+                    if(!this.requestFieldsSlot[chat.getCountOptionsFields]){
+                        console.log("returntkt")
+                        chat.currentStep = CurrentStep.returnTkt
+                        break
+                    }
+
+                    field = this.requestFieldsSlot[chat.getCountOptionsFields]
+                    chat.optionsFields = field?.validValues.split(',').map((value: string) => {return value.toLowerCase().trim()})
+                    answer = `A continuación, escriba la respuesta para el siguiente campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
+                    break
+                case CurrentStep.returnTkt:
                     this.tkt = {
                         accountId: chat.getAccountId,
                         projectId: chat._projectId,
                         issueTypeId: chat.getIssueTypeId,
                         requestId: chat.getOptionRequest,
-                        fields: validatedFields
+                        fields: this.validatedFields
                     }
-                    chat.currentStep = CurrentStep.returnTkt
-                case CurrentStep.returnTkt:
                     const response = await this.jiraServ.createTKT(this.tkt)
                     console.log(response)
             }
@@ -217,4 +202,3 @@ export class WebhookService {
         catch (error) { return {status: 'FAIL webhookSERV', error}}
     }
 }
-
