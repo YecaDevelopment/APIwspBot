@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { ChatService } from 'src/chat/chat.service';
-import { Chat, CurrentStep } from 'src/chat/chat';
+import { CurrentStep } from 'src/chat/chat';
 import { infoTKT, JiraService } from 'src/jira/jira.service';
 
 function validateMail(mail: string) {
@@ -46,7 +46,7 @@ export class WebhookService {
                     break
                 case CurrentStep.identify:
                     // Enviar numero de telefono a la db -> mail del usuario
-                    if(chat.accountId === undefined || null) {
+                    if(chat.accountId === undefined || null || "") {
                         if(msg.trim() === "") {
                             answer = `Mensaje vacio. Por favor vuelva a intentarlo`
                             break
@@ -55,7 +55,7 @@ export class WebhookService {
                             answer = "El formato del correo electronico NO es valido, por favor vuelva a intentarlo."
                             break
                         }
-                        const verifyUser = await this.jiraServ.verifyUser(msg.trim())
+                        const verifyUser = await this.jiraServ.verifyUser(msg.toLowerCase().trim())
                         if(!verifyUser.status) {
                             answer = "No se logro verificar su identidad, por favor vuelva intentarlo."
                             break
@@ -66,12 +66,12 @@ export class WebhookService {
                     }
                     const issuesGroups = await this.jiraServ.getIssuesGroups(chat.projectId)
                     if(!issuesGroups.status) {
-                        answer += "Fallo al obtener los grupos."
+                        answer += "Fallo al obtener los grupos, por favor vuelva a intentarlo"
                         break
                     }
                     if(typeof issuesGroups.body === 'string') {
                         // Matar la operación?
-                        answer += issuesGroups.body
+                        answer += "No se encontraron grupos, comuniquese con soporte tecnico."
                         break
                     }
                     const groupOptions = issuesGroups.body.map((issuesGroup: {id: string, name: string}, index) => {
@@ -84,24 +84,25 @@ export class WebhookService {
                     break
                 case CurrentStep.selectGroup:
                     if(isNaN(parseInt(msg))) {
-                        answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentar."
+                        answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentarlo."
                         break
                     }
-                    if(!this.groupOptionsSlot[(parseInt(msg)-1)]) {
+                    const groupId = this.groupOptionsSlot[(parseInt(msg)-1)]
+                    if(!groupId) {
                         answer = "Opcion no encontrada, por favor vuelva a intentarlo."
                         break
                     }
-                    const issuesRequests = await this.jiraServ.getIssuesRequests(chat.projectId, this.groupOptionsSlot[(parseInt(msg)-1)])
+                    const issuesRequests = await this.jiraServ.getIssuesRequests(chat.projectId, groupId)
                     if(!issuesRequests.status) {
                         answer = "Fallo al obtener las solicitudes, por favor vuelva a intentarlo."
                         break
                     }
                     if(typeof issuesRequests.body === 'string') {
                         // Matar la operación?
-                        answer = issuesRequests.body
+                        answer = "No se encontraron solicitudes, comuniquese con soporte tecnico."
                         break
                     }
-                    chat.optionGroup = this.groupOptionsSlot[(parseInt(msg)-1)]
+                    chat.optionGroup = groupId
                     const requestOptions = issuesRequests.body.map((issuesRequest: {id: string, name: string, issueTypeId: string, groupId: number, canCreate: boolean}, index) => {
                         this.requestOptionsSlot.push(issuesRequest)
                         return `${index+1} . ${issuesRequest?.name}`
@@ -112,36 +113,37 @@ export class WebhookService {
                     break
                 case CurrentStep.selectRequest:
                     if(isNaN(parseInt(msg))) {
-                        answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentar."
+                        answer = "El mensaje a enviar debe ser de valor numerico, por favor vuelva a intentarlo."
                         break
                     }
-                    if(!this.requestOptionsSlot[(parseInt(msg)-1)]) {
+                    const request = this.requestOptionsSlot[(parseInt(msg)-1)]
+                    if(!request) {
                         answer = "Opcion no encontrada, por favor vuelva a intentarlo."
                         break
                     }
-                    const issuesRequestsFields = await this.jiraServ.getIssuesRequestsFields(chat.projectId, parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id))
+                    const requestId = parseInt(request.id)
+                    const issuesRequestsFields = await this.jiraServ.getIssuesRequestsFields(chat.projectId, requestId)
                     if(!issuesRequestsFields.status) {
                         answer = "Fallo al obtener las solicitudes, por favor vuelva a intentar"
                         break
                     }
                     if(typeof issuesRequestsFields.body === 'string') {
                         // Matar la operación?
-                        answer = issuesRequestsFields.body
+                        answer = "No se encontraron campos en esta solicitud, comuniquese con soporte tecnico."
                         break
                     }
-                    chat.optionRequest = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].id)
-                    chat.issueTypeId = parseInt(this.requestOptionsSlot[(parseInt(msg)-1)].issueTypeId)
+                    chat.optionRequest = requestId
+                    chat.issueTypeId = parseInt(request.issueTypeId)
                     this.requestFieldsSlot = issuesRequestsFields.body
                     chat.currentStep = CurrentStep.fillOptions
-                    answer = "Genial, ahora te compartire una serie de campos que deberas completar...\n" 
+                    answer = "Genial, ahora te compartire una serie de campos que deberas completar.\n" 
                 case CurrentStep.fillOptions:
                     let field: any
                     if(chat.getCountOptionsFields === -1) {
                         chat.countOptionsFields = chat.getCountOptionsFields + 1
-                        console.log(chat.getCountOptionsFields)
                         field = this.requestFieldsSlot[chat.getCountOptionsFields]
                         chat.optionsFields = field?.validValues.split(',').map((value: string) => {return value.toLowerCase().trim()})
-                        answer += `Escriba el nombre del campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
+                        answer += `A continuación, escriba la respuesta para el siguiente campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
                         break
                     }
                     field = this.requestFieldsSlot[chat.getCountOptionsFields]
@@ -155,20 +157,19 @@ export class WebhookService {
                     }
 
                     chat.countOptionsFields = chat.getCountOptionsFields + 1
-                    console.log(chat.getCountOptionsFields)
                     chat.optionsFields = []
                     this.validatedFields.push({fieldId: field.fieldId, value: msg.trim()})
 
                     if(!this.requestFieldsSlot[chat.getCountOptionsFields]){
                         console.log("returntkt")
                         chat.currentStep = CurrentStep.returnTkt
+                    }
+                    else {
+                        field = this.requestFieldsSlot[chat.getCountOptionsFields]
+                        chat.optionsFields = field?.validValues.split(',').map((value: string) => {return value.toLowerCase().trim()})
+                        answer = `A continuación, escriba la respuesta para el siguiente campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
                         break
                     }
-
-                    field = this.requestFieldsSlot[chat.getCountOptionsFields]
-                    chat.optionsFields = field?.validValues.split(',').map((value: string) => {return value.toLowerCase().trim()})
-                    answer = `A continuación, escriba la respuesta para el siguiente campo -> ${field?.name}.${field?.validValues === "" ? "" : `\n Opciones: ${field?.validValues}`}`
-                    break
                 case CurrentStep.returnTkt:
                     this.tkt = {
                         accountId: chat.getAccountId,
@@ -179,6 +180,7 @@ export class WebhookService {
                     }
                     const response = await this.jiraServ.createTKT(this.tkt)
                     console.log(response)
+                    break
             }
 
             const data = {
