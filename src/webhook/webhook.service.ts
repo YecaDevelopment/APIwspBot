@@ -5,18 +5,13 @@ import { ChatService } from 'src/chat/chat.service';
 import { CurrentStep } from 'src/chat/chat';
 import { infoTKT, JiraService } from 'src/jira/jira.service';
 
-function validateMail(mail: string) {
-    const mailPattern = /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/;
-    return mailPattern.test(mail);
-}
-
 @Injectable()
 export class WebhookService {
 
     private groupOptionsSlot: number[] = []
     private requestOptionsSlot: {id: string, name: string, issueTypeId: string, groupId: number, canCreate: boolean}[] = []
     private requestFieldsSlot: any[] = []
-    private validatedFields: {fieldId : string, value: string}[] = []
+    private validatedFields: {fieldId : string, value: string | {}}[] = []
     private tkt : infoTKT
 
     constructor(
@@ -24,6 +19,11 @@ export class WebhookService {
         private readonly chatServ : ChatService,
         private readonly jiraServ : JiraService
     ){}
+
+    private validateMail(mail: string) {
+        const mailPattern = /^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/;
+        return mailPattern.test(mail);
+    }
 
     async sendMessage(to : string, msg : string){
         try {
@@ -51,7 +51,7 @@ export class WebhookService {
                             answer = `Mensaje vacio. Por favor vuelva a intentarlo`
                             break
                         }
-                        if(!validateMail(msg.trim())) {
+                        if(!this.validateMail(msg.trim())) {
                             answer = "El formato del correo electronico NO es valido, por favor vuelva a intentarlo."
                             break
                         }
@@ -158,10 +158,24 @@ export class WebhookService {
 
                     chat.countOptionsFields = chat.getCountOptionsFields + 1
                     chat.optionsFields = []
-                    this.validatedFields.push({fieldId: field.fieldId, value: msg.trim()})
+                    this.validatedFields.push({
+                            fieldId: field.fieldId,
+                            value: field.fieldId !== "description"
+                                ? msg.trim()
+                                : {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [{
+                                      "type": "paragraph",
+                                      "content": [{
+                                        "text": msg,
+                                        "type": "text"
+                                      }]
+                                    }]
+                                }
+                        })
 
                     if(!this.requestFieldsSlot[chat.getCountOptionsFields]){
-                        console.log("returntkt")
                         chat.currentStep = CurrentStep.returnTkt
                     }
                     else {

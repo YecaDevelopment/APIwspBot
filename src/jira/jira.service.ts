@@ -20,7 +20,7 @@ export interface infoTKT {
   projectId: number
   issueTypeId: number
   requestId: number
-  fields: {fieldId : string, value: string}[]
+  fields: {fieldId : string, value: string | {}}[]
 }
 
 @Injectable()
@@ -113,24 +113,14 @@ export class JiraService {
         return acc;
       }, {});
 
+      console.log({...dynamicFields})
+
       const body = {
         "fields": {
           "reporter": {"id": infoTkt.accountId},
-          "project": {"id": infoTkt.projectId},
+          "project": {"id": infoTkt.projectId.toString()},
           "issuetype": {"id": infoTkt.issueTypeId.toString()},
           "customfield_10010": infoTkt.requestId.toString(),
-          // "summary": "TESTING with BACKEND",
-          // "description": {
-          //   "type": "doc",
-          //   "version": 1,
-          //   "content": [{
-          //     "type": "paragraph",
-          //     "content": [{
-          //       "text": "I generated this TKT with method in bot",
-          //       "type": "text"
-          //     }]
-          //   }]
-          // },
           ...dynamicFields
         },
         "update": {},
